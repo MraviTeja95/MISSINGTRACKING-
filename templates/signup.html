@@ -1,0 +1,48 @@
+{% extends "base.html" %} {% block title %}Signup – TraceNet{% endblock %} {% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-7 col-lg-6">
+            <div class="card p-4 shadow-sm">
+                <div class="card-header text-center border-0 pb-0">
+                    <h1 class="h4">Create Account</h1>
+                    <p class="text-muted">Join TraceNet as Admin, Police, or Public.</p>
+                </div>
+                <div class="card-body pt-0">
+                    <form method="post" action="{{ url_for('auth.signup') }}">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Username</label>
+                                <input type="text" name="username" class="form-control" value="{{ username | default('') }}" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Email</label>
+                                <input type="email" name="email" class="form-control" value="{{ email | default('') }}" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Password</label>
+                                <input type="password" name="password" class="form-control" placeholder="Password" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Confirm Password</label>
+                                <input type="password" name="confirm_password" class="form-control" placeholder="Confirm Password" required>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Role</label>
+                                <select class="form-select" name="role">
+                  <option value="Public" {% if role == 'Public' %}selected{% endif %}>Public</option>
+                  <option value="Police" {% if role == 'Police' %}selected{% endif %}>Police</option>
+                  <option value="Admin" {% if role == 'Admin' %}selected{% endif %}>Admin</option>
+                </select>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100 mt-4">Sign Up</button>
+                    </form>
+                    <div class="text-center mt-3">
+                        <small class="text-muted">Already have an account? <a href="{{ url_for('auth.login') }}">Login</a></small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

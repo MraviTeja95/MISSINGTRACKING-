@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{% block title %}TraceNet – Missing Person & Crime Analysis{% endblock %}</title>
+
+    <!-- Bootstrap 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/animated-background.css') }}" />
+
+    <style>
+         :root {
+            --clr-bg: #0b0f1a;
+            --clr-surface: #0e1628;
+            --clr-card: rgba(14, 22, 40, 0.95);
+            --clr-border: rgba(58, 110, 165, 0.22);
+            --clr-accent: #3a6ea5;
+            --clr-accent2: #00c2d1;
+            --clr-danger: #e63946;
+            --clr-success: #22c55e;
+            --clr-text: #e5e7eb;
+            --clr-muted: #9ca3af;
+            --clr-surface-strong: rgba(7, 12, 23, 0.94);
+            --font-body: 'Inter', sans-serif;
+            --font-display: 'Poppins', sans-serif;
+        }
+        
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+        }
+        
+        html,
+        body {
+            min-height: 100%;
+        }
+        
+        body {
+            margin: 0;
+            font-family: var(--font-body);
+            color: var(--clr-text);
+            background: radial-gradient(circle at 12% 12%, rgba(0, 194, 209, 0.12), transparent 20%), radial-gradient(circle at 88% 28%, rgba(58, 110, 165, 0.12), transparent 18%), linear-gradient(180deg, #0b0f1a 0%, #0e1628 48%, #08101e 100%);
+            background-attachment: fixed;
+            position: relative;
+            overflow-x: hidden;
+            opacity: 0;
+            transition: opacity 0.35s ease;
+        }
+        
+        body.loaded {
+            opacity: 1;
+        }
+        
+        .navbar {
+            background: rgba(7, 12, 23, 0.98);
+            border-bottom: 1px solid rgba(58, 110, 165, 0.18);
+            padding: 1rem 0;
+            box-shadow: 0 14px 50px rgba(0, 0, 0, 0.18);
+            z-index: 1100;
+        }
+        
+        .navbar .container {
+            max-width: 1180px;
+        }
+        
+        .navbar-brand {
+            font-family: var(--font-display);
+            letter-spacing: -0.04em;
+            font-size: 1.5rem;
+            color: var(--clr-text) !important;
+            display: inline-flex;
+            align-items: center;
+            text-transform: uppercase;
+            font-weight: 700;
+        }
+        
+        .navbar-brand .brand-icon {
+            width: 40px;
+            height: 40px;
+            margin-right: 0.85rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 14px;
+            background: linear-gradient(135deg, rgba(58, 110, 165, 0.95), rgba(0, 194, 209, 0.95));
+            box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.08);
+            position: relative;
+        }
+        
+        .navbar-nav {
+            align-items: center;
+            gap: 1rem;
+        }
+
+        
+        .navbar-brand .brand-icon::before {
+            content: '';
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255, 255, 255, 0.8);
+            border-radius: 50%;
+            box-shadow: inset 0 0 0 1px rgba(0, 194, 209, 0.45);
+        }
+        
+        .navbar-brand .brand-icon::after {
+            content: '';
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.9);
+            top: 12px;
+            left: 15px;
+            box-shadow: 0 0 20px rgba(0, 194, 209, 0.75);
+        }
+        
+        .nav-link {
+            color: var(--clr-muted) !important;
+            font-weight: 500;
+            position: relative;
+        }
+        
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: -4px;
+            height: 2px;
+            background: rgba(59, 130, 246, 0.28);
+            opacity: 0;
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 0.25s ease, opacity 0.25s ease;
+        }
+        
+        .nav-link:hover::after,
+        .nav-link.active::after {
+            opacity: 1;
+            transform: scaleX(1);
+        }
+        
+        .nav-link:hover,
+        .nav-link.active {
+            color: #ffffff !important;
+            text-shadow: 0 0 8px rgba(0, 194, 209, 0.25);
+        }
+        
+        .nav-link:hover::after,
+        .nav-link.active::after {
+            background: rgba(0, 194, 209, 0.55);
+        }
+        
+        .card {
+            background: var(--clr-surface-strong);
+            border: 1px solid rgba(58, 110, 165, 0.18);
+            border-radius: 18px;
+            box-shadow: 0 20px 45px rgba(0, 0, 0, 0.18);
+        }
+        
+        .card-header {
+            background: transparent;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            font-weight: 600;
+        }
+        
+        .btn-primary,
+        .btn-outline-primary {
+            transition: transform 0.3s ease, filter 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #3a6ea5, #00c2d1);
+            border: none;
+            border-radius: 14px;
+            color: #ffffff;
+            padding: 0.85rem 1.75rem;
+            box-shadow: 0 12px 30px rgba(0, 194, 209, 0.18);
+        }
+        
+        .btn-primary:hover {
+            filter: brightness(1.07);
+            transform: translateY(-2px);
+            box-shadow: 0 16px 34px rgba(0, 194, 209, 0.24);
+        }
+        
+        .btn-outline-primary {
+            color: #eef2ff;
+            border-color: rgba(0, 194, 209, 0.45);
+            background: transparent;
+            border-radius: 14px;
+        }
+        
+        .btn-outline-primary:hover {
+            background: rgba(0, 194, 209, 0.12);
+            filter: brightness(1.04);
+            transform: translateY(-2px);
+        }
+        
+        .btn .bi {
+            margin-right: 0.35rem;
+            vertical-align: -0.125em;
+        }
+        
+        .form-control,
+        .form-select,
+        .input-group-text {
+            background: #111827;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: var(--clr-text);
+            border-radius: 12px;
+            transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
+        }
+        
+        .form-control:focus,
+        .form-select:focus {
+            border-color: var(--clr-accent);
+            box-shadow: 0 0 0 0.2rem rgba(59, 130, 246, 0.18);
+            background: #111827;
+            color: var(--clr-text);
+            outline: none;
+        }
+        
+        .form-label {
+            color: var(--clr-muted);
+            font-size: .95rem;
+            font-weight: 600;
+        }
+        
+        .input-group-text {
+            background: #111827;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: var(--clr-muted);
+            border-radius: 12px;
+        }
+        
+        .modal-content {
+            background: #0e1526;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 18px;
+            box-shadow: none;
+        }
+        
+        .modal-header,
+        .modal-footer {
+            border: none;
+        }
+        
+        .modal-backdrop.show {
+            background-color: rgba(0, 0, 0, 0.55);
+        }
+        
+        .page-header {
+            padding: 2.5rem 0 1.5rem;
+            border-bottom: 1px solid rgba(58, 110, 165, 0.18);
+            margin-bottom: 2rem;
+        }
+        
+        .page-header h1 {
+            font-family: var(--font-display);
+            font-size: clamp(2.2rem, 4vw, 3.6rem);
+            letter-spacing: -0.04em;
+            margin: 0;
+            color: #eef2ff;
+        }
+        
+        .text-muted {
+            color: var(--clr-muted) !important;
+        }
+        
+        .toast {
+            background: rgba(15, 22, 40, 0.96);
+            border: 1px solid rgba(58, 110, 165, 0.2);
+            color: var(--clr-text);
+        }
+        
+        #toast-container {
+            z-index: 11000;
+        }
+        
+         ::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+         ::-webkit-scrollbar-track {
+            background: rgba(7, 11, 22, 0.8);
+        }
+        
+         ::-webkit-scrollbar-thumb {
+            background: rgba(59, 130, 246, 0.28);
+            border-radius: 99px;
+        }
+        
+        .feature-card {
+            display: block;
+            background: var(--clr-surface);
+            border: 1px solid rgba(58, 110, 165, 0.18);
+            border-radius: 18px;
+            padding: 1.6rem;
+            color: inherit;
+            text-decoration: none;
+            box-shadow: 0 16px 34px rgba(0, 0, 0, 0.12);
+            transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+        }
+        
+        .feature-card:hover {
+            background: rgba(0, 194, 209, 0.08);
+            transform: translateY(-2px);
+            box-shadow: 0 24px 40px rgba(0, 0, 0, 0.18);
+            text-decoration: none;
+            border-color: rgba(0, 194, 209, 0.35);
+        }
+        
+        .badge.bg-primary {
+            background-color: rgba(58, 110, 165, 0.16) !important;
+            color: var(--clr-accent) !important;
+        }
+        
+        .feature-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 48px;
+            height: 48px;
+            border-radius: 14px;
+            margin-bottom: 1rem;
+            background: rgba(0, 194, 209, 0.12);
+            color: var(--clr-accent2);
+            box-shadow: inset 0 0 0 1px rgba(0, 194, 209, 0.15);
+        }
+        
+        .feature-icon i {
+            font-size: 1.15rem;
+        }
+        
+        .navbar-brand span.highlight {
+            color: var(--clr-accent2);
+        }
+
+    </style>
+
+    {% block extra_head %}{% endblock %}
+</head>
+
+<body>
+    <div class="app-background" aria-hidden="true">
+        <svg class="app-background__defs" aria-hidden="true">
+            <defs>
+                <filter id="liquid-distortion" x="-40%" y="-40%" width="180%" height="180%">
+                    <feTurbulence id="bg-turbulence" result="undulation" type="turbulence" numOctaves="2" baseFrequency="0.0008 0.0024" seed="0" />
+                    <feColorMatrix id="bg-hue-rotate" in="undulation" type="hueRotate" values="180" />
+                    <feColorMatrix in="dist" result="circulation" type="matrix" values="4 0 0 0 1  4 0 0 0 1  4 0 0 0 1  1 0 0 0 0" />
+                    <feDisplacementMap id="bg-displacement-a" in="SourceGraphic" in2="circulation" scale="36" result="dist" />
+                    <feDisplacementMap id="bg-displacement-b" in="dist" in2="undulation" scale="36" result="output" />
+                </filter>
+            </defs>
+        </svg>
+        <div class="app-background__liquid-wrap">
+            <div class="app-background__liquid"></div>
+        </div>
+        <div class="app-background__noise"></div>
+    </div>
+
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg sticky-top">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <span class="brand-icon"></span> Trace
+                <span class="highlight">Net</span>
+            </a>
+            <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu">
+      <i class="bi bi-list text-light fs-4"></i>
+    </button>
+            <div class="collapse navbar-collapse" id="navMenu">
+                <ul class="navbar-nav ms-auto gap-1">
+                    <li class="nav-item"><a class="nav-link" href="/"><i class="bi bi-house me-1"></i>Home</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/report"><i class="bi bi-plus-circle me-1"></i>Report</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/missing-list"><i class="bi bi-people me-1"></i>Missing</a></li>
+                    {% if current_user.is_authenticated and current_user.role in ('Admin', 'Police') %}
+                    <li class="nav-item"><a class="nav-link" href="/dashboard"><i class="bi bi-bar-chart-line me-1"></i>Dashboard</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/face-search"><i class="bi bi-person-bounding-box me-1"></i>Face Search</a></li>
+                    {% endif %} {% if current_user.is_authenticated %}
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('ui.notification_settings') }}"><i class="bi bi-bell-ring me-1"></i>Notifications</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('auth.logout') }}"><i class="bi bi-box-arrow-right me-1"></i>Logout</a></li>
+                    <li class="nav-item"><span class="nav-link disabled">{{ current_user.username }}</span></li>
+                    <li class="nav-item"><span class="nav-link disabled">Role: {{ current_user.role }}</span></li>
+                    {% else %}
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('auth.login') }}"><i class="bi bi-box-arrow-in-right me-1"></i>Login</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('auth.signup') }}"><i class="bi bi-person-plus me-1"></i>Signup</a></li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Toast container -->
+    <div id="toast-container"></div>
+
+    <div class="container mt-3">
+        {% with messages = get_flashed_messages(with_categories=true) %} {% if messages %} {% for category, message in messages %}
+        <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endfor %} {% endif %} {% endwith %}
+    </div>
+
+    <!-- Page content -->
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="mt-5 py-4" style="border-top:1px solid var(--clr-border);">
+        <div class="container text-center text-muted small">
+            TraceNet &copy; 2026 &nbsp;|&nbsp; Missing Person Tracking &amp; Crime Pattern Analysis
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+    <script src="{{ url_for('static', filename='js/animated-background.js') }}"></script>
+
+    <script>
+        // ── Toast helper ──────────────────────────────────────────────────────────
+        function showToast(message, type = 'info') {
+            const colors = {
+                success: '#22c55e',
+                danger: '#ef4444',
+                info: '#3b82f6',
+                warning: '#f59e0b'
+            };
+            const container = document.getElementById('toast-container');
+            const id = 'toast-' + Date.now();
+            container.insertAdjacentHTML('beforeend', `
+      <div id="${id}" class="toast show mb-2" role="alert" style="min-width:280px">
+        <div class="toast-body d-flex align-items-center gap-2">
+          <span style="width:8px;height:8px;border-radius:50%;background:${colors[type]};flex-shrink:0"></span>
+          ${message}
+        </div>
+      </div>`);
+            setTimeout(() => {
+                const toastEl = document.getElementById(id);
+                if (toastEl) toastEl.remove();
+            }, 4000);
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            document.body.classList.add('loaded');
+            document.querySelectorAll('.nav-link').forEach(link => {
+                if (link.href === window.location.href) link.classList.add('active');
+            });
+        });
+    </script>
+
+    {% block extra_scripts %}{% endblock %}
+</body>
+
+</html>

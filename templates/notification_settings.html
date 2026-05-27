@@ -1,0 +1,232 @@
+{% extends "base.html" %} {% block title %}Notification Settings – TraceNet{% endblock %} {% block extra_head %}
+<style>
+    .settings-panel {
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 18px;
+        padding: 1.8rem;
+    }
+    
+    .settings-panel h3 {
+        margin-bottom: 1rem;
+    }
+    
+    .feature-alert {
+        border-left: 4px solid #3b82f6;
+        background: rgba(59, 130, 246, 0.08);
+        padding: 1rem 1rem 1rem 1.1rem;
+        margin-bottom: 1rem;
+        color: #e2e8f0;
+    }
+</style>
+{% endblock %} {% block content %}
+<div class="container py-4">
+    <div class="page-header mb-4">
+        <div class="container-fluid px-3">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+                <div>
+                    <h4 class="text-warning mb-1">Notification Settings</h4>
+                    <p class="text-muted mb-0">Manage device registration for real-time alerts and Firebase push notifications.</p>
+                </div>
+                <a class="btn btn-outline-primary btn-sm" href="/dashboard"><i class="bi bi-arrow-left-circle me-1"></i>Return to dashboard</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3">
+        <div class="col-lg-7">
+            <div class="settings-panel">
+                <h3>Push Notification Setup</h3>
+                {% if firebase_config.apiKey and firebase_vapid_key %}
+                <div class="feature-alert">
+                    <strong>Automatic registration available.</strong> Click the button below to request browser push permission and register your device token automatically.
+                </div>
+                <button id="enablePushBtn" type="button" class="btn btn-primary mb-3">Enable Push Notifications</button>
+                <div id="pushHint" class="small text-muted mb-3">This will open a browser prompt asking for notification permission.</div>
+                {% else %}
+                <div class="feature-alert" style="border-color:#f59e0b;background:rgba(245,158,11,0.08)">
+                    <strong>Automatic registration is not configured.</strong> You can still register a valid FCM token manually below.
+                </div>
+                {% endif %}
+
+                <div class="mb-3">
+                    <label for="deviceTokenInput" class="form-label">Device Token</label>
+                    <input id="deviceTokenInput" type="text" class="form-control" placeholder="Paste FCM device token here" autocomplete="off" />
+                </div>
+                <div class="d-flex flex-wrap gap-2 mb-3">
+                    <button id="registerDeviceBtn" type="button" class="btn btn-primary">Register Device</button>
+                    <button id="unregisterDeviceBtn" type="button" class="btn btn-outline-light">Unregister Device</button>
+                </div>
+                <div class="mb-3">
+                    <span id="notificationStatus" class="badge bg-secondary">Not registered</span>
+                </div>
+                <div id="settingsMessage" class="small text-muted">Registered tokens are stored on the server so TraceNet can send alerts to your browser.</div>
+            </div>
+        </div>
+
+        <div class="col-lg-5">
+            <div class="settings-panel">
+                <h3>Usage Notes</h3>
+                <ul class="mb-0" style="list-style: disc inside; color:#cbd5e1;">
+                    <li>Use the manual token field if you already have an FCM device token.</li>
+                    <li>The browser must allow notifications for this site.</li>
+                    <li>If using automatic registration, service worker support is required.</li>
+                    <li>Unregistering removes the token from the server and stops alerts to this device.</li>
+                </ul>
+                <hr class="my-3" style="border-color: rgba(255,255,255,0.08);" />
+                <div class="text-muted small">
+                    After registration, the site can receive real-time alerts for:
+                    <ul class="mb-0 mt-2">
+                        <li>Face match detections</li>
+                        <li>High crime prediction alerts</li>
+                        <li>Other security notifications</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} {% block extra_scripts %} {% if firebase_config.apiKey and firebase_vapid_key %}
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-messaging-compat.js"></script>
+{% endif %}
+<script>
+    const firebaseConfig = {
+        {
+            firebase_config | tojson
+        }
+    };
+    const firebaseVapidKey = '{{ firebase_vapid_key }}';
+    const hasFirebaseWebConfig = Boolean(firebaseConfig.apiKey && firebaseVapidKey);
+
+    function updateNotificationUI(isRegistered) {
+        const statusEl = document.getElementById('notificationStatus');
+        const tokenInput = document.getElementById('deviceTokenInput');
+        statusEl.textContent = isRegistered ? 'Registered' : 'Not registered';
+        statusEl.className = isRegistered ? 'badge bg-success' : 'badge bg-secondary';
+        tokenInput.classList.toggle('border-success', isRegistered);
+    }
+
+    function showNotificationToast(message, type = 'info') {
+        showToast(message, type);
+    }
+
+    async function registerDevice(token) {
+        if (!token) {
+            showNotificationToast('Enter a device token or enable push notifications first.', 'warning');
+            return false;
+        }
+        try {
+            const res = await fetch('/api/notifications/register', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    device_token: token,
+                    platform: 'web'
+                })
+            });
+            const payload = await res.json();
+            if (!res.ok || !payload.success) {
+                showNotificationToast(payload.error || 'Device registration failed', 'danger');
+                return false;
+            }
+            localStorage.setItem('traceNetNotificationToken', token);
+            updateNotificationUI(true);
+            showNotificationToast('Device registered successfully', 'success');
+            return true;
+        } catch (err) {
+            showNotificationToast('Device registration failed', 'danger');
+            return false;
+        }
+    }
+
+    async function unregisterDevice(token) {
+        if (!token) {
+            showNotificationToast('Enter the registered device token first.', 'warning');
+            return false;
+        }
+        try {
+            const res = await fetch('/api/notifications/unregister', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    device_token: token
+                })
+            });
+            const payload = await res.json();
+            if (!res.ok || !payload.success) {
+                showNotificationToast(payload.error || 'Device unregister failed', 'danger');
+                return false;
+            }
+            localStorage.removeItem('traceNetNotificationToken');
+            updateNotificationUI(false);
+            showNotificationToast('Device unregistered successfully', 'success');
+            return true;
+        } catch (err) {
+            showNotificationToast('Device unregister failed', 'danger');
+            return false;
+        }
+    }
+
+    async function requestPushPermission() {
+        if (!hasFirebaseWebConfig) {
+            showNotificationToast('Firebase web config is not configured.', 'warning');
+            return;
+        }
+        if (!('serviceWorker' in navigator)) {
+            showNotificationToast('Service workers are not supported in this browser.', 'danger');
+            return;
+        }
+        try {
+            const permission = await Notification.requestPermission();
+            if (permission !== 'granted') {
+                showNotificationToast('Notification permission was denied.', 'warning');
+                return;
+            }
+
+            const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+            const messaging = firebase.messaging();
+            await messaging.useServiceWorker(registration);
+            const token = await messaging.getToken({
+                vapidKey: firebaseVapidKey
+            });
+            if (token) {
+                document.getElementById('deviceTokenInput').value = token;
+                await registerDevice(token);
+            } else {
+                showNotificationToast('Unable to obtain FCM token.', 'danger');
+            }
+        } catch (err) {
+            showNotificationToast('Push registration failed. Check console for details.', 'danger');
+            console.error('Push registration error:', err);
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const storedToken = localStorage.getItem('traceNetNotificationToken');
+        if (storedToken) {
+            document.getElementById('deviceTokenInput').value = storedToken;
+            updateNotificationUI(true);
+        }
+
+        document.getElementById('registerDeviceBtn').addEventListener('click', async() => {
+            const token = document.getElementById('deviceTokenInput').value.trim();
+            await registerDevice(token);
+        });
+
+        document.getElementById('unregisterDeviceBtn').addEventListener('click', async() => {
+            const token = document.getElementById('deviceTokenInput').value.trim();
+            await unregisterDevice(token);
+        });
+
+        const enablePushBtn = document.getElementById('enablePushBtn');
+        if (enablePushBtn) {
+            enablePushBtn.addEventListener('click', requestPushPermission);
+        }
+    });
+</script>
+{% endblock %}
