@@ -17,15 +17,10 @@ numpy>=1.26.2
 Pillow>=10.1.0
 opencv-python-headless>=4.8.0
 
-# ── Face Recognition ───────────────────────────────────────────────────────
-# The app uses `face_recognition` together with OpenCV for face matching.
-# Installing dlib is required by face_recognition.
-#   Ubuntu/Debian: sudo apt-get install cmake libopenblas-dev
-#   macOS:         brew install cmake
-#   Windows:       pip install cmake
-#
-dlib==19.24.2
-face_recognition==1.3.0
+# Note: face_recognition & dlib are excluded for Render compatibility.
+# They are only imported inside a function in utils/face_utils.py,
+# so the app starts fine without them. Face matching features will
+# be unavailable on Render.
 
 # ── Utilities ─────────────────────────────────────────────────────────────────
 python-dotenv==1.0.0
