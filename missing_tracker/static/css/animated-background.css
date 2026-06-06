@@ -1,0 +1,83 @@
+.app-background {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    overflow: hidden;
+}
+
+.app-background__defs {
+    position: absolute;
+    width: 0;
+    height: 0;
+    overflow: hidden;
+}
+
+.app-background__liquid-wrap {
+    position: absolute;
+    inset: -42px;
+    filter: url(#liquid-distortion) blur(4px);
+    opacity: 0.38;
+}
+
+.app-background__liquid {
+    width: 100%;
+    height: 100%;
+    background-color: rgba(128, 128, 128, 1);
+    mask-image: url("https://framerusercontent.com/images/ceBGguIpUU8luwByxuQz79t7To.png");
+    mask-size: cover;
+    mask-repeat: no-repeat;
+    mask-position: center;
+    -webkit-mask-image: url("https://framerusercontent.com/images/ceBGguIpUU8luwByxuQz79t7To.png");
+    -webkit-mask-size: cover;
+    -webkit-mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+}
+
+.app-background__noise {
+    position: absolute;
+    inset: 0;
+    background-image: url("https://framerusercontent.com/images/g0QcWrxr87K0ufOxIUFBakwYA8.png");
+    background-size: 200px;
+    background-repeat: repeat;
+    opacity: 0.08;
+}
+
+main,
+footer,
+#toast-container,
+body>.container {
+    position: relative;
+    z-index: 1;
+}
+
+.card,
+.feature-card,
+.modal-content {
+    backdrop-filter: blur(9px);
+    -webkit-backdrop-filter: blur(9px);
+}
+
+@media (max-width: 991px) {
+    .app-background__liquid-wrap {
+        inset: -34px;
+        opacity: 0.35;
+    }
+}
+
+@media (max-width: 576px) {
+    .app-background__liquid-wrap {
+        inset: -28px;
+        opacity: 0.3;
+    }
+    .app-background__noise {
+        opacity: 0.06;
+        background-size: 180px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .app-background__liquid-wrap {
+        filter: blur(2px);
+    }
+}

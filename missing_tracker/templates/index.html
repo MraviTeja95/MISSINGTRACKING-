@@ -1,0 +1,501 @@
+{% extends "base.html" %} {% block title %}TraceNet – Home{% endblock %} {% block extra_head %}
+<style>
+    .hero {
+        min-height: 88vh;
+        display: flex;
+        align-items: center;
+        padding: 3rem 0;
+        margin-bottom: 1.5rem;
+        position: relative;
+        z-index: 1;
+    }
+
+    .hero::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background-image: radial-gradient(circle at 84% 24%, rgba(251, 100, 21, 0.08), transparent 12%), radial-gradient(circle at 24% 18%, rgba(37, 99, 235, 0.08), transparent 14%);
+        background-size: auto, auto, 120px 120px, 120px 120px;
+        opacity: 0.55;
+        pointer-events: none;
+        z-index: -1;
+    }
+
+    .globe-panel,
+    .globe-wrap,
+    #hero-globe {
+        z-index: 1;
+    }
+
+    .hero-copy {
+        max-width: 680px;
+        position: relative;
+        z-index: 1;
+    }
+
+    .hero-brand {
+        display: flex;
+        justify-content: center;
+        margin-bottom: 2rem;
+        position: relative;
+        z-index: 1;
+    }
+
+    .hero-brand-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.9rem;
+        padding: 0.8rem 1.35rem;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.92);
+        border: 1px solid rgba(229, 231, 235, 0.95);
+        box-shadow: 0 14px 32px rgba(15, 23, 42, 0.06);
+        text-decoration: none;
+    }
+
+    .hero-brand-mark {
+        width: 42px;
+        height: 42px;
+        border-radius: 14px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #2563eb, #fb6415);
+        box-shadow: 0 14px 28px rgba(37, 99, 235, 0.16);
+        position: relative;
+        flex: 0 0 auto;
+    }
+
+    .hero-brand-mark::before {
+        content: '';
+        position: absolute;
+        width: 16px;
+        height: 16px;
+        border: 2px solid rgba(255, 255, 255, 0.88);
+        border-radius: 50%;
+    }
+
+    .hero-brand-mark::after {
+        content: '';
+        position: absolute;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.95);
+        box-shadow: 0 0 16px rgba(251, 100, 21, 0.35);
+    }
+
+    .hero-brand-text {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.2rem;
+        font-family: var(--font-display);
+        font-size: 1.35rem;
+        font-weight: 700;
+        letter-spacing: -0.05em;
+        text-transform: uppercase;
+        color: #111827;
+    }
+
+    .hero-brand-text .accent {
+        color: #fb6415;
+    }
+
+    .hero-title {
+        font-family: var(--font-display);
+        font-size: clamp(2.35rem, 4.8vw, 4.35rem);
+        line-height: 1.1;
+        letter-spacing: -0.04em;
+        margin-bottom: 1.2rem;
+        color: #111827;
+    }
+
+    .hero-title .accent2 {
+        color: var(--clr-accent2);
+    }
+
+    .hero-sub {
+        color: var(--clr-muted);
+        font-size: 1.05rem;
+        max-width: 640px;
+        line-height: 1.9;
+        margin-bottom: 2rem;
+    }
+
+    .hero-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        align-items: center;
+        margin-bottom: 2rem;
+    }
+
+    .hero-stats {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(140px, 1fr));
+        gap: 1rem;
+        width: 100%;
+    }
+
+    .stat-pill {
+        background: rgba(255, 255, 255, 0.9);
+        border: 1px solid rgba(229, 231, 235, 0.95);
+        border-radius: 24px;
+        padding: 1rem 1.25rem;
+        transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+        box-shadow: 0 18px 30px rgba(15, 23, 42, 0.06);
+    }
+
+    .stat-pill:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 22px 36px rgba(0, 0, 0, 0.24);
+        border-color: rgba(0, 194, 209, 0.25);
+    }
+
+    .stat-pill .stat-value {
+        font-family: var(--font-display);
+        font-size: 2rem;
+        color: #111827;
+        font-weight: 700;
+    }
+
+    .stat-pill .stat-label {
+        color: var(--clr-muted);
+        font-size: 0.85rem;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        margin-top: 0.5rem;
+    }
+
+    .hero-visual {
+        position: relative;
+        min-height: 430px;
+    }
+
+    .globe-panel {
+        min-height: 390px;
+        border-radius: 24px;
+        background: rgba(238, 242, 247, 1);
+        border: 1px solid rgba(229, 231, 235, 0.95);
+        box-shadow: 0 22px 48px rgba(15, 23, 42, 0.07);
+        position: relative;
+        overflow: hidden;
+        padding: 1rem;
+    }
+
+    .globe-panel::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background-image: radial-gradient(circle at 70% 30%, rgba(251, 100, 21, 0.08), transparent 20%);
+        background-size: auto, 120px 120px, 120px 120px;
+        opacity: 0.84;
+        pointer-events: none;
+        z-index: 0;
+    }
+
+    .globe-wrap {
+        position: relative;
+        z-index: 1;
+        height: 100%;
+        min-height: 360px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    #hero-globe {
+        width: min(100%, 420px);
+        aspect-ratio: 1 / 1;
+        cursor: grab;
+        opacity: 0;
+        transition: opacity 0.45s ease;
+        contain: layout paint size;
+    }
+
+    .globe-chip {
+        position: absolute;
+        top: 18px;
+        left: 18px;
+        z-index: 2;
+        background: rgba(255, 255, 255, 0.92);
+        border: 1px solid rgba(229, 231, 235, 0.95);
+        color: var(--clr-muted);
+        border-radius: 999px;
+        padding: 0.4rem 0.75rem;
+        font-size: 0.78rem;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+    }
+
+    @media (max-width: 991px) {
+        .hero {
+            padding-top: 3rem;
+            padding-bottom: 3rem;
+        }
+
+        .hero-stats {
+            grid-template-columns: 1fr;
+        }
+
+        .hero-visual {
+            margin-top: 1rem;
+        }
+    }
+
+    @media (max-width: 767px) {
+        .hero {
+            min-height: auto;
+        }
+
+        .hero-actions {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .globe-panel {
+            min-height: 330px;
+        }
+
+        .globe-wrap {
+            min-height: 300px;
+        }
+    }
+</style>
+{% endblock %} {% block content %}
+<section class="hero">
+    <div class="container">
+        <div class="row align-items-center gy-5">
+            <div class="col-lg-6 hero-copy">
+                <div class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 mb-3 px-3 py-2">
+                    <i class="bi bi-radar me-1"></i> AI Monitoring Platform
+                </div>
+                <h1 class="hero-title">
+                    Smart <span class="accent2">Missing Person Tracking</span> System
+                </h1>
+                <p class="hero-sub">
+                    AI-powered platform for tracking and identifying missing persons with modern analytics, real-time monitoring, and secure data management.
+                </p>
+                <div class="hero-actions">
+                    <a href="/dashboard" class="btn btn-primary btn-lg">
+                        <i class="bi bi-arrow-right-circle me-2"></i>Explore System
+                    </a>
+                    <a href="/report" class="btn btn-outline-primary btn-lg">
+                        <i class="bi bi-plus-circle me-2"></i>Report Missing Person
+                    </a>
+                </div>
+                <div class="hero-stats" id="live-stats">
+                    <div class="stat-pill">
+                        <div class="stat-value" id="stat-missing">–</div>
+                        <div class="stat-label">Currently Missing</div>
+                    </div>
+                    <div class="stat-pill">
+                        <div class="stat-value" id="stat-found">–</div>
+                        <div class="stat-label">Found Cases</div>
+                    </div>
+                    <div class="stat-pill">
+                        <div class="stat-value" id="stat-crimes">–</div>
+                        <div class="stat-label">Crime Records</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-5 offset-lg-1 hero-visual">
+                <div class="globe-panel">
+                    <div class="globe-chip">Global Case Reach</div>
+                    <div class="globe-wrap">
+                        <canvas id="hero-globe"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="py-5" style="border-top:1px solid var(--clr-border);">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h2 style="font-family:var(--font-display);font-size:2.2rem;font-weight:800;letter-spacing:-.03em;color:#111827;">Platform Capabilities</h2>
+            <p class="text-muted mt-2">Four integrated modules working in concert</p>
+        </div>
+        <div class="row g-4">
+            <div class="col-md-6 col-lg-3">
+                <a href="/report" class="feature-card h-100">
+                    <div class="feature-icon" style="background:rgba(59,130,246,.15)">
+                        <i class="bi bi-person-plus-fill text-primary"></i>
+                    </div>
+                    <h5 class="fw-semibold mb-2">Report Missing Person</h5>
+                    <p class="text-muted small mb-0">Submit detailed reports with photos. AI encodes faces for automated matching.</p>
+                </a>
+            </div>
+            <div class="col-md-6 col-lg-3">
+                <a href="/missing-list" class="feature-card h-100">
+                    <div class="feature-icon" style="background:rgba(6,182,212,.15)">
+                        <i class="bi bi-people-fill" style="color:var(--clr-accent2)"></i>
+                    </div>
+                    <h5 class="fw-semibold mb-2">Missing Persons Registry</h5>
+                    <p class="text-muted small mb-0">Browse all cases with status tracking. Mark found to close a case.</p>
+                </a>
+            </div>
+            <div class="col-md-6 col-lg-3">
+                <a href="/face-search" class="feature-card h-100">
+                    <div class="feature-icon" style="background:rgba(239,68,68,.15)">
+                        <i class="bi bi-person-bounding-box" style="color:var(--clr-danger)"></i>
+                    </div>
+                    <h5 class="fw-semibold mb-2">AI Face Search</h5>
+                    <p class="text-muted small mb-0">Upload any photo to find the closest match in the database using face recognition.</p>
+                </a>
+            </div>
+            <div class="col-md-6 col-lg-3">
+                <a href="/dashboard" class="feature-card h-100">
+                    <div class="feature-icon" style="background:rgba(245,158,11,.15)">
+                        <i class="bi bi-bar-chart-line-fill" style="color:#f59e0b"></i>
+                    </div>
+                    <h5 class="fw-semibold mb-2">Crime Intelligence</h5>
+                    <p class="text-muted small mb-0">ML-driven risk predictions. Identify hotspots before incidents escalate.</p>
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %} {% block extra_scripts %}
+<script type="module">
+    const canvas = document.getElementById("hero-globe");
+    if (!canvas) {
+        // keep page stable even if section is removed
+    } else {
+        const drawFallback = () => {
+            const ctx = canvas.getContext("2d");
+            if (!ctx) return;
+            const size = Math.max(Math.floor(canvas.offsetWidth || 320), 220);
+            const dpr = 1;
+            canvas.width = size * dpr;
+            canvas.height = size * dpr;
+            ctx.scale(dpr, dpr);
+            ctx.clearRect(0, 0, size, size);
+
+            const cx = size / 2;
+            const cy = size / 2;
+            const radius = size * 0.42;
+
+            const glow = ctx.createRadialGradient(cx, cy, radius * 0.2, cx, cy, radius * 1.45);
+            glow.addColorStop(0, "rgba(251,100,21,0.18)");
+            glow.addColorStop(1, "rgba(251,100,21,0)");
+            ctx.fillStyle = glow;
+            ctx.fillRect(0, 0, size, size);
+
+            const sphere = ctx.createRadialGradient(cx - radius * 0.25, cy - radius * 0.2, radius * 0.15, cx, cy, radius);
+            sphere.addColorStop(0, "rgba(255,255,255,0.98)");
+            sphere.addColorStop(0.45, "rgba(245,247,250,0.96)");
+            sphere.addColorStop(0.78, "rgba(225,231,239,0.98)");
+            sphere.addColorStop(1, "rgba(209,216,226,1)");
+            ctx.fillStyle = sphere;
+            ctx.beginPath();
+            ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.strokeStyle = "rgba(156,163,175,0.34)";
+            ctx.lineWidth = 1;
+            for (let i = 1; i <= 4; i++) {
+                ctx.beginPath();
+                ctx.arc(cx, cy, radius * (i / 5), 0, Math.PI * 2);
+                ctx.stroke();
+            }
+
+            canvas.style.opacity = "1";
+            canvas.style.cursor = "default";
+        };
+
+        const init = async () => {
+            if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+                drawFallback();
+                return;
+            }
+
+            try {
+                const { default: createGlobe } = await import("https://esm.sh/cobe@0.6.3");
+                let phi = 0;
+                let width = 0;
+                let pointerStart = null;
+                let pointerMovement = 0;
+                let dragOffset = 0;
+
+                const onResize = () => {
+                    width = canvas.offsetWidth || 280;
+                };
+                onResize();
+
+                const globe = createGlobe(canvas, {
+                    width: width * 2,
+                    height: width * 2,
+                    devicePixelRatio: 1.2,
+                    phi: 0,
+                    theta: 0.28,
+                    dark: 0,
+                    diffuse: 0.4,
+                    mapSamples: 4200,
+                    mapBrightness: 1.2,
+                    baseColor: [1, 1, 1],
+                    markerColor: [251 / 255, 100 / 255, 21 / 255],
+                    glowColor: [1, 1, 1],
+                    markers: [
+                        { location: [17.385, 78.4867], size: 0.06 },
+                        { location: [28.6139, 77.209], size: 0.055 },
+                        { location: [40.7128, -74.006], size: 0.05 },
+                        { location: [51.5072, -0.1276], size: 0.045 },
+                        { location: [35.6762, 139.6503], size: 0.045 },
+                    ],
+                    onRender: (state) => {
+                        if (pointerStart === null) phi += 0.0025;
+                        state.phi = phi + dragOffset;
+                        state.width = width * 2;
+                        state.height = width * 2;
+                    },
+                });
+
+                canvas.style.opacity = "1";
+
+                const pointerDown = (e) => {
+                    pointerStart = e.clientX - pointerMovement;
+                    canvas.style.cursor = "grabbing";
+                };
+                const pointerUp = () => {
+                    pointerStart = null;
+                    canvas.style.cursor = "grab";
+                };
+                const pointerMove = (e) => {
+                    if (pointerStart === null) return;
+                    const delta = e.clientX - pointerStart;
+                    pointerMovement = delta;
+                    dragOffset = delta / 240;
+                };
+
+                window.addEventListener("resize", onResize, { passive: true });
+                canvas.addEventListener("pointerdown", pointerDown);
+                canvas.addEventListener("pointerup", pointerUp);
+                canvas.addEventListener("pointerleave", pointerUp);
+                canvas.addEventListener("pointermove", pointerMove);
+
+                window.addEventListener("beforeunload", () => {
+                    globe.destroy();
+                }, { once: true });
+            } catch (error) {
+                drawFallback();
+            }
+        };
+
+        init();
+    }
+</script>
+<script>
+    fetch('/api/dashboard/summary')
+        .then((r) => r.json())
+        .then((data) => {
+            if (data.success) {
+                document.getElementById('stat-missing').textContent = data.stats.total_missing;
+                document.getElementById('stat-found').textContent = data.stats.total_found;
+                document.getElementById('stat-crimes').textContent = data.stats.total_crimes;
+            }
+        })
+        .catch(() => {});
+</script>
+{% endblock %}

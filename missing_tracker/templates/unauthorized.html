@@ -1,0 +1,16 @@
+{% extends "base.html" %} {% block title %}Unauthorized – TraceNet{% endblock %} {% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card p-4 text-center" style="background:#ffffff;">
+                <div class="card-body">
+                    <h1 class="display-6 text-danger">Access Denied</h1>
+                    <p class="lead text-muted">You do not have permission to view this page.</p>
+                    <p class="mb-4">This page is reserved for Admin and Police users.</p>
+                    <a class="btn btn-primary" href="{{ url_for('ui.home') }}">Return Home</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

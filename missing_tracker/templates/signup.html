@@ -1,0 +1,495 @@
+{% extends "base.html" %}
+{% block title %}{% if page_type == 'police' %}Police Signup{% else %}Signup{% endif %} – TraceNet{% endblock %}
+{% block body_class %}login-page{% endblock %}
+{% block navbar %}{% endblock %}
+{% block footer %}{% endblock %}
+{% block flash_messages %}{% endblock %}
+{% block extra_head %}
+<style>
+    .login-page {
+        background: #f5f7fb !important;
+        color: #111827;
+    }
+
+    .login-page .app-background,
+    .login-page #toast-container {
+        display: none;
+    }
+
+    .login-page main {
+        min-height: 100vh;
+    }
+
+    .login-feature-shell {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 3rem 1.5rem;
+    }
+
+    .login-feature {
+        position: relative;
+        width: min(1240px, 100%);
+        margin: 0 auto;
+        overflow: hidden;
+        border-radius: 1.5rem;
+        border: 1px solid #e5e7eb;
+        background: #eef2f7;
+        box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+        padding: 4rem 1.5rem;
+    }
+
+    .login-feature-row {
+        display: flex;
+        flex-direction: column-reverse;
+        align-items: center;
+        justify-content: space-between;
+        gap: 2.5rem;
+        position: relative;
+        z-index: 2;
+    }
+
+    .login-copy {
+        z-index: 10;
+        width: 100%;
+        max-width: 38rem;
+        text-align: left;
+    }
+
+    .login-copy h1 {
+        margin: 0;
+        color: #111827;
+        font-family: var(--font-body);
+        font-size: 1.95rem;
+        font-weight: 400;
+        line-height: 1.45;
+        letter-spacing: -0.03em;
+    }
+
+    .login-copy .brand-accent {
+        color: #2563eb;
+        font-weight: 600;
+    }
+
+    .login-copy .support-copy {
+        color: #6b7280;
+    }
+
+    .login-panel {
+        position: relative;
+        z-index: 3;
+        width: 100%;
+        max-width: 29rem;
+        margin-top: 2rem;
+        padding: 1.5rem;
+        border-radius: 1.5rem;
+        background: rgba(255, 255, 255, 0.92);
+        border: 1px solid rgba(229, 231, 235, 0.95);
+        box-shadow: 0 18px 38px rgba(15, 23, 42, 0.08);
+    }
+
+    .login-panel h2 {
+        margin: 0 0 0.35rem;
+        color: #111827;
+        font-family: var(--font-body);
+        font-size: 1.55rem;
+        font-weight: 600;
+        letter-spacing: -0.03em;
+    }
+
+    .login-panel p {
+        margin: 0 0 1.25rem;
+        color: #6b7280;
+        line-height: 1.65;
+    }
+
+    .login-form {
+        display: grid;
+        gap: 1rem;
+    }
+
+    .login-form .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+    }
+
+    .login-field {
+        display: grid;
+        gap: 0.45rem;
+    }
+
+    .login-field label {
+        color: #374151;
+        font-size: 0.92rem;
+        font-weight: 600;
+    }
+
+    .login-field input,
+    .login-field select {
+        width: 100%;
+        border: 1px solid #d1d5db;
+        border-radius: 1rem;
+        background: #ffffff;
+        color: #111827;
+        padding: 0.9rem 1rem;
+        outline: none;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        font-size: 0.95rem;
+    }
+
+    .login-field input::placeholder {
+        color: #9ca3af;
+    }
+
+    .login-field input:focus,
+    .login-field select:focus {
+        border-color: #2563eb;
+        box-shadow: 0 0 0 0.2rem rgba(37, 99, 235, 0.12);
+    }
+
+    .login-submit {
+        margin-top: 0.25rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        width: 100%;
+        border: 0;
+        border-radius: 999px;
+        background: #111827;
+        color: #f9fafb;
+        padding: 0.9rem 1.2rem;
+        font-size: 0.95rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.25s ease, transform 0.25s ease;
+    }
+
+    .login-submit:hover {
+        background: #000000;
+        transform: translateY(-1px);
+    }
+
+    .login-meta {
+        margin-top: 1rem;
+        color: #6b7280;
+        font-size: 0.92rem;
+        text-align: center;
+    }
+
+    .login-meta a {
+        color: #2563eb;
+        font-weight: 600;
+        text-decoration: none;
+    }
+
+    .login-meta a:hover {
+        text-decoration: underline;
+    }
+
+    .login-alerts {
+        margin-bottom: 1rem;
+    }
+
+    .login-alerts .alert {
+        border-radius: 1rem;
+        background: #fef2f2;
+        border: 1px solid #fecaca;
+        color: #b91c1c;
+        margin-bottom: 0.75rem;
+    }
+
+    .globe-stage {
+        position: absolute;
+        inset: 0;
+        margin-left: auto;
+        aspect-ratio: 1 / 1;
+        width: 100%;
+        max-width: 600px;
+    }
+
+    .globe-canvas {
+        position: absolute;
+        bottom: -5rem;
+        right: -10rem;
+        width: 150%;
+        height: 150%;
+        opacity: 0;
+        transition: opacity 0.5s ease;
+        contain: layout paint size;
+        cursor: grab;
+    }
+
+    .globe-canvas.is-ready {
+        opacity: 1;
+    }
+
+    .login-panel-wrap {
+        position: relative;
+        height: 220px;
+        width: 100%;
+        max-width: 40rem;
+    }
+
+    .role-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        padding: 0.3rem 0.75rem;
+        border-radius: 999px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        margin-bottom: 0.75rem;
+    }
+
+    .role-badge.police {
+        background: rgba(37, 99, 235, 0.1);
+        color: #2563eb;
+    }
+
+    .role-badge.public {
+        background: rgba(22, 163, 74, 0.1);
+        color: #16a34a;
+    }
+
+    @media (min-width: 768px) {
+        .login-feature {
+            padding: 6rem 4rem;
+        }
+
+        .login-feature-row {
+            flex-direction: row;
+            gap: 2.5rem;
+        }
+    }
+
+    @media (max-width: 767.98px) {
+        .login-feature-shell {
+            padding: 1.5rem 1rem;
+        }
+
+        .login-feature {
+            padding: 2rem 1rem;
+        }
+
+        .login-copy h1 {
+            font-size: 1.6rem;
+        }
+
+        .login-panel-wrap {
+            height: 180px;
+        }
+
+        .login-form .form-row {
+            grid-template-columns: 1fr;
+        }
+
+        .globe-canvas {
+            right: -7rem;
+            bottom: -4rem;
+        }
+    }
+</style>
+{% endblock %}
+{% block content %}
+<section class="login-feature-shell">
+    <section class="login-feature" {% if page_type == 'police' %}style="border-color: rgba(37, 99, 235, 0.3);"{% endif %}>
+        <div class="login-feature-row">
+            <div class="login-copy">
+                {% if page_type == 'police' %}
+                <h1>
+                    <i class="bi bi-shield-lock" style="color: #2563eb; font-size: 1.6rem; vertical-align: middle;"></i>
+                    <span class="brand-accent">Police Registration</span>
+                    <span class="support-copy">Create an authorized officer account to access secure dashboards, case management, face recognition, and crime intelligence tools.</span>
+                </h1>
+                {% else %}
+                <h1>
+                    Join <span class="brand-accent">TraceNet</span>
+                    <span class="support-copy">Create your account and start using powerful tools for missing person tracking, crime analysis, and secure field coordination.</span>
+                </h1>
+                {% endif %}
+
+                <div class="login-panel">
+                    {% if page_type == 'police' %}
+                    <span class="role-badge police"><i class="bi bi-shield-fill-check"></i> Police Account</span>
+                    <h2><i class="bi bi-shield-fill-check" style="color: #2563eb; margin-right: 0.4rem;"></i>Officer Registration</h2>
+                    <p>Register as an authorized officer. Your account will have Police-level access to all secure features.</p>
+                    {% else %}
+                    <span class="role-badge public"><i class="bi bi-person-check"></i> Public Account</span>
+                    <h2>Create Account</h2>
+                    <p>Join TraceNet to report missing persons, browse cases, and receive alerts.</p>
+                    {% endif %}
+
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                        <div class="login-alerts">
+                            {% for category, message in messages %}
+                            <div class="alert alert-{{ 'danger' if category == 'error' else category }}" role="alert">
+                                {{ message }}
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    {% endwith %}
+
+                    <form class="login-form" method="post" action="{{ url_for('auth.signup') }}">
+                        <div class="form-row">
+                            <div class="login-field">
+                                <label for="username">Username</label>
+                                <input id="username" type="text" name="username" placeholder="Choose a username" value="{{ username | default('') }}" required autofocus>
+                            </div>
+                            <div class="login-field">
+                                <label for="email">Email</label>
+                                <input id="email" type="email" name="email" placeholder="Your email address" value="{{ email | default('') }}" required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="login-field">
+                                <label for="password">Password</label>
+                                <input id="password" type="password" name="password" placeholder="Create a password" required>
+                            </div>
+                            <div class="login-field">
+                                <label for="confirm_password">Confirm Password</label>
+                                <input id="confirm_password" type="password" name="confirm_password" placeholder="Confirm password" required>
+                            </div>
+                        </div>
+
+                        {% if page_type == 'police' %}
+                        <input type="hidden" name="role" value="Police">
+                        {% else %}
+                        <div class="login-field">
+                            <label for="role">Account Type</label>
+                            <select id="role" name="role">
+                                <option value="Public" {% if role|default('Public') == 'Public' %}selected{% endif %}>Public User</option>
+                                <option value="Police" {% if role|default('') == 'Police' %}selected{% endif %}>Police Officer</option>
+                                <option value="Admin" {% if role|default('') == 'Admin' %}selected{% endif %}>Administrator</option>
+                            </select>
+                        </div>
+                        {% endif %}
+
+                        <button type="submit" class="login-submit" {% if page_type == 'police' %}style="background: #2563eb;"{% endif %}>
+                            {% if page_type == 'police' %}
+                            <i class="bi bi-shield-lock"></i> Create Officer Account
+                            {% else %}
+                            Create Account <i class="bi bi-arrow-right"></i>
+                            {% endif %}
+                        </button>
+                    </form>
+
+                    <div class="login-meta" style="margin-top: 1rem;">
+                        {% if page_type == 'police' %}
+                        Already registered? <a href="{{ url_for('auth.police_login') }}"><i class="bi bi-shield-lock"></i> Police Login</a>
+                        <span style="margin: 0 0.5rem; color: #d1d5db;">|</span>
+                        <a href="{{ url_for('auth.signup') }}" style="color: #6b7280; font-weight: 500;">
+                            <i class="bi bi-person"></i> Sign up as User
+                        </a>
+                        {% else %}
+                        Already have an account? <a href="{{ url_for('auth.login') }}">Login</a>
+                        <span style="margin: 0 0.5rem; color: #d1d5db;">|</span>
+                        <a href="{{ url_for('auth.police_signup') }}" style="display: inline-flex; align-items: center; gap: 0.35rem; color: #2563eb; font-weight: 600;">
+                            <i class="bi bi-shield-lock"></i> Register as Police
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="login-panel-wrap">
+                <div class="globe-stage">
+                    <canvas id="loginGlobeCanvas" class="globe-canvas"></canvas>
+                </div>
+            </div>
+        </div>
+    </section>
+</section>
+{% endblock %}
+{% block extra_scripts %}
+<script>
+    (function() {
+        const canvas = document.getElementById('loginGlobeCanvas');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+
+        const markers = [
+            { lat: 14.5995, lon: 120.9842, size: 0.03 },
+            { lat: 19.076, lon: 72.8777, size: 0.1 },
+            { lat: 23.8103, lon: 90.4125, size: 0.05 },
+            { lat: 30.0444, lon: 31.2357, size: 0.07 },
+            { lat: 39.9042, lon: 116.4074, size: 0.08 },
+            { lat: -23.5505, lon: -46.6333, size: 0.1 },
+            { lat: 19.4326, lon: -99.1332, size: 0.1 },
+            { lat: 40.7128, lon: -74.0060, size: 0.1 },
+            { lat: 34.6937, lon: 135.5022, size: 0.05 },
+            { lat: 41.0082, lon: 28.9784, size: 0.06 }
+        ];
+
+        let width = 0, height = 0;
+        let dpr = Math.min(window.devicePixelRatio || 1, 2);
+        let phi = 0, dragOffset = 0, pointerActive = false, pointerStart = 0, animationFrame = null;
+
+        function resize() {
+            const rect = canvas.getBoundingClientRect();
+            width = Math.max(260, Math.floor(rect.width));
+            height = Math.max(260, Math.floor(rect.height));
+            canvas.width = width * dpr;
+            canvas.height = height * dpr;
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            canvas.classList.add('is-ready');
+        }
+
+        function project(lat, lon, radius, cx, cy, rot) {
+            const lr = lat * Math.PI / 180, lo = lon * Math.PI / 180 + rot;
+            const x = Math.cos(lr) * Math.sin(lo), y = Math.sin(lr), z = Math.cos(lr) * Math.cos(lo);
+            return { x: cx + x * radius, y: cy + y * radius, visible: z > 0, depth: z };
+        }
+
+        function draw(rot) {
+            ctx.clearRect(0, 0, width, height);
+            const cx = width / 2, cy = height / 2, r = Math.min(width, height) * 0.3;
+            const g = ctx.createRadialGradient(cx - r * 0.32, cy - r * 0.38, r * 0.12, cx, cy, r);
+            g.addColorStop(0, '#ffffff'); g.addColorStop(0.46, '#eef2f7');
+            g.addColorStop(0.75, '#d5dbe5'); g.addColorStop(1, '#c8d0dc');
+            ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fillStyle = g; ctx.fill();
+            ctx.lineWidth = 1; ctx.strokeStyle = 'rgba(156,163,175,0.35)';
+            for (let lat = -60; lat <= 60; lat += 30) {
+                ctx.beginPath(); let s = false;
+                for (let lon = -180; lon <= 180; lon += 4) {
+                    const p = project(lat, lon, r, cx, cy, rot);
+                    if (!p.visible) { s = false; continue; }
+                    if (!s) { ctx.moveTo(p.x, p.y); s = true; } else ctx.lineTo(p.x, p.y);
+                } ctx.stroke();
+            }
+            for (let lon = -150; lon <= 180; lon += 30) {
+                ctx.beginPath(); let s = false;
+                for (let lat = -88; lat <= 88; lat += 3) {
+                    const p = project(lat, lon, r, cx, cy, rot);
+                    if (!p.visible) { s = false; continue; }
+                    if (!s) { ctx.moveTo(p.x, p.y); s = true; } else ctx.lineTo(p.x, p.y);
+                } ctx.stroke();
+            }
+            markers.map(m => ({ ...m, point: project(m.lat, m.lon, r, cx, cy, rot) }))
+                .filter(m => m.point.visible).sort((a, b) => a.point.depth - b.point.depth)
+                .forEach(m => {
+                    const ds = 3 + m.size * 36;
+                    ctx.beginPath(); ctx.arc(m.point.x, m.point.y, ds * 3, 0, Math.PI * 2);
+                    ctx.fillStyle = 'rgba(251,100,21,0.12)'; ctx.fill();
+                    ctx.beginPath(); ctx.arc(m.point.x, m.point.y, ds, 0, Math.PI * 2);
+                    ctx.fillStyle = '#fb6415'; ctx.fill();
+                });
+        }
+
+        function animate() { if (!pointerActive) phi += 0.005; draw(phi + dragOffset); animationFrame = requestAnimationFrame(animate); }
+        resize(); animate();
+        window.addEventListener('resize', resize);
+        canvas.addEventListener('pointerdown', e => { pointerActive = true; pointerStart = e.clientX - dragOffset * 200; canvas.style.cursor = 'grabbing'; });
+        canvas.addEventListener('pointerup', () => { pointerActive = false; canvas.style.cursor = 'grab'; });
+        canvas.addEventListener('pointerout', () => { pointerActive = false; canvas.style.cursor = 'grab'; });
+        canvas.addEventListener('pointermove', e => { if (pointerActive) dragOffset = (e.clientX - pointerStart) / 200; });
+        canvas.addEventListener('touchmove', e => { if (e.touches[0] && pointerActive) dragOffset = (e.touches[0].clientX - pointerStart) / 200; }, { passive: true });
+        window.addEventListener('beforeunload', () => { if (animationFrame) cancelAnimationFrame(animationFrame); });
+    })();
+</script>
+{% endblock %}

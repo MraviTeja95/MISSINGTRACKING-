@@ -1,0 +1,427 @@
+{% extends "base.html" %} {% block title %}AI Face Search – TraceNet{% endblock %} {% block extra_head %}
+<style>
+    .search-panel {
+        background: var(--clr-card);
+        border: 1px solid var(--clr-border);
+        border-radius: 24px;
+        padding: 2rem;
+        box-shadow: 0 16px 34px rgba(15, 23, 42, 0.05);
+    }
+    
+    .upload-zone {
+        border: 2px dashed var(--clr-border);
+        border-radius: 24px;
+        padding: 3rem 2rem;
+        text-align: center;
+        cursor: pointer;
+        transition: border-color .2s, background .2s;
+        position: relative;
+    }
+    
+    .upload-zone:hover,
+    .upload-zone.active {
+        border-color: var(--clr-accent);
+        background: rgba(37, 99, 235, .05);
+    }
+    
+    .upload-zone input[type=file] {
+        position: absolute;
+        inset: 0;
+        opacity: 0;
+        cursor: pointer;
+        width: 100%;
+        height: 100%;
+    }
+    
+    #query-preview {
+        max-height: 300px;
+        width: 100%;
+        object-fit: contain;
+        border-radius: 12px;
+        display: none;
+        margin-top: 1rem;
+    }
+    
+    .match-card {
+        background: var(--clr-card);
+        border: 1px solid var(--clr-border);
+        border-radius: 24px;
+        overflow: hidden;
+    }
+    
+    .match-card.high-match {
+        border-color: #22c55e;
+    }
+    
+    .match-card.mid-match {
+        border-color: #f59e0b;
+    }
+    
+    .match-card.low-match {
+        border-color: #ef4444;
+    }
+    
+    .match-pct {
+        font-family: var(--font-display);
+        font-size: 3rem;
+        font-weight: 700;
+        line-height: 1;
+    }
+    
+    .match-bar-track {
+        height: 8px;
+        border-radius: 99px;
+        background: rgba(226, 232, 240, .7);
+        overflow: hidden;
+    }
+    
+    .match-bar-fill {
+        height: 100%;
+        border-radius: 99px;
+        background: var(--clr-accent);
+    }
+    
+    .scanning-overlay {
+        position: absolute;
+        inset: 0;
+        background: rgba(255, 255, 255, .72);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 12px;
+    }
+</style>
+{% endblock %} {% block content %}
+<div class="page-header">
+    <div class="container">
+        <div>
+            <h1><i class="bi bi-person-bounding-box text-danger me-3"></i>AI Face Search</h1>
+            <p class="text-muted mb-0 mt-1">Upload any photo to search the missing persons database via facial recognition</p>
+        </div>
+    </div>
+</div>
+
+<div class="container pb-5">
+    <div class="row g-4">
+
+        <!-- Upload Panel -->
+        <div class="col-lg-5">
+            <div class="search-panel">
+                <h5 class="fw-semibold mb-1">Upload Search Image</h5>
+                <p class="text-muted small mb-4">Clear frontal face photos produce the most accurate results</p>
+
+                <div class="upload-zone" id="dropZone">
+                    <input type="file" id="faceInput" accept="image/*">
+                    <div id="face-placeholder">
+                        <i class="bi bi-person-bounding-box fs-1 text-primary"></i>
+                        <p class="fw-semibold mt-3 mb-1">Drop face photo here</p>
+                        <p class="text-muted small">or click to browse — JPG, PNG, WEBP</p>
+                    </div>
+                    <div id="preview-wrap" class="position-relative" style="display:none">
+                        <img id="query-preview" src="" alt="Query face" style="display:block">
+                        <div class="scanning-overlay" id="scanning-overlay" style="display:none">
+                            <div class="scan-line"></div>
+                            <div class="text-center">
+                                <div class="spinner-border text-primary mb-2" role="status"></div>
+                                <p class="small mb-0" style="color:#111827;">Scanning database...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-4">
+                    <label class="form-label d-flex justify-content-between align-items-center mb-2">
+            <span>Minimum confidence threshold</span>
+            <span id="thresholdValue">{{ face_match_confidence_threshold }}%</span>
+          </label>
+                    <input type="range" id="confidenceThreshold" class="form-range" min="50" max="95" step="1" value="{{ face_match_confidence_threshold }}">
+                    <p class="small text-muted mb-0">Higher values require stronger matches and reduce false positives.</p>
+                </div>
+
+                <button class="btn btn-primary w-100 mt-3" id="searchBtn" onclick="runFaceSearch()" disabled>
+          <i class="bi bi-search me-2"></i>Search Database
+        </button>
+
+                <div class="mt-4 p-3 rounded-4" style="background:rgba(37,99,235,.06);border:1px solid rgba(37,99,235,.12)">
+                    <p class="small mb-2 fw-semibold text-primary"><i class="bi bi-info-circle me-1"></i>How It Works</p>
+                    <ol class="small text-muted ps-3 mb-0">
+                        <li class="mb-1">Upload a clear photo with a visible face</li>
+                        <li class="mb-1">AI extracts facial feature embeddings</li>
+                        <li class="mb-1">Compares against all encoded photos in the database</li>
+                        <li>Returns the closest match with similarity %</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Panel -->
+        <div class="col-lg-7">
+            <div class="search-panel h-100">
+                <h5 class="fw-semibold mb-1">Search Results</h5>
+                <p class="text-muted small mb-4">Matching results will appear here after scanning</p>
+
+                <!-- Initial state -->
+                <div id="initial-state" class="text-center py-5">
+                    <i class="bi bi-radar fs-1 text-muted"></i>
+                    <p class="text-muted mt-3">Awaiting image upload…</p>
+                </div>
+
+                <!-- Match result -->
+                <div id="match-result" style="display:none">
+
+                    <!-- Match found -->
+                    <div id="match-found-panel" style="display:none">
+                        <div class="d-flex align-items-center gap-2 mb-3">
+                            <i class="bi bi-check-circle-fill text-success fs-5"></i>
+                            <span class="fw-semibold text-success">Match Found</span>
+                        </div>
+
+                        <div class="match-card" id="matchCard">
+                            <div class="row g-0">
+                                <div class="col-sm-4">
+                                    <img id="match-photo" src="" alt="" style="width:100%;height:220px;object-fit:cover">
+                                </div>
+                                <div class="col-sm-8 p-4">
+                                    <div class="d-flex justify-content-between align-items-start mb-3">
+                                        <div>
+                                            <h4 class="fw-bold mb-0" id="match-name">–</h4>
+                                            <span class="text-muted small" id="match-id"></span>
+                                        </div>
+                                        <div class="match-pct" id="match-pct">–%</div>
+                                    </div>
+
+                                    <div class="match-bar-track mb-3">
+                                        <div class="match-bar-fill" id="match-bar" style="width:0%"></div>
+                                    </div>
+                                    <p class="text-muted small mb-1">
+                                        <i class="bi bi-person me-1"></i>Age: <span id="match-age">–</span>
+                                    </p>
+                                    <p class="text-muted small mb-1">
+                                        <i class="bi bi-geo-alt me-1"></i>Last Seen: <span id="match-location">–</span>
+                                    </p>
+                                    <p class="text-muted small mb-3">
+                                        <i class="bi bi-calendar me-1"></i>Reported: <span id="match-date">–</span>
+                                    </p>
+                                    <div id="match-contact-wrap" style="display:none">
+                                        <a id="match-contact" href="#" class="btn btn-sm btn-success">
+                                            <i class="bi bi-telephone me-1"></i>Contact Reporter
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-3 p-3 rounded-3" id="confidence-note" style="background:rgba(34,197,94,.07);border:1px solid rgba(34,197,94,.2)">
+                            <p class="small mb-0 text-success" id="confidence-text"></p>
+                            <p class="small text-muted mb-0" id="threshold-detail"></p>
+                        </div>
+                    </div>
+
+                    <!-- No match -->
+                    <div id="no-match-panel" style="display:none" class="text-center py-4">
+                        <i class="bi bi-person-x fs-1 text-muted"></i>
+                        <h5 class="mt-3">No Match Found</h5>
+                        <p class="text-muted">The face did not match any records in the database above the confidence threshold.</p>
+                        <p class="text-muted small" id="no-match-threshold"></p>
+                        <p class="text-muted small">Try a clearer photo, or the person may not be in the registry.</p>
+                    </div>
+
+                    <!-- Error -->
+                    <div id="error-panel" style="display:none" class="text-center py-4">
+                        <i class="bi bi-exclamation-triangle fs-1 text-warning"></i>
+                        <h5 class="mt-3">Search Error</h5>
+                        <p class="text-muted" id="error-msg"></p>
+                    </div>
+
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %} {% block extra_scripts %}
+<script>
+    const faceInput = document.getElementById('faceInput');
+    const queryPreview = document.getElementById('query-preview');
+    const placeholder = document.getElementById('face-placeholder');
+    const previewWrap = document.getElementById('preview-wrap');
+    const searchBtn = document.getElementById('searchBtn');
+    let selectedFile = null;
+
+    faceInput.addEventListener('change', e => {
+        selectedFile = e.target.files[0];
+        if (!selectedFile) return;
+
+        const reader = new FileReader();
+        reader.onload = ev => {
+            queryPreview.src = ev.target.result;
+            queryPreview.style.display = 'block';
+            previewWrap.style.display = 'block';
+            placeholder.style.display = 'none';
+            searchBtn.disabled = false;
+        };
+        reader.readAsDataURL(selectedFile);
+    });
+
+    const thresholdInput = document.getElementById('confidenceThreshold');
+    if (thresholdInput) {
+        thresholdInput.addEventListener('input', e => {
+            document.getElementById('thresholdValue').textContent = e.target.value + '%';
+        });
+    }
+
+    // Drag and drop
+    const dropZone = document.getElementById('dropZone');
+    dropZone.addEventListener('dragover', e => {
+        e.preventDefault();
+        dropZone.classList.add('active');
+    });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('active'));
+    dropZone.addEventListener('drop', e => {
+        e.preventDefault();
+        dropZone.classList.remove('active');
+        const file = e.dataTransfer.files[0];
+        if (file && file.type.startsWith('image/')) {
+            // Simulate file input
+            const dt = new DataTransfer();
+            dt.items.add(file);
+            faceInput.files = dt.files;
+            faceInput.dispatchEvent(new Event('change'));
+        }
+    });
+
+    async function runFaceSearch() {
+        if (!selectedFile) return;
+
+        // Show scanning overlay
+        document.getElementById('scanning-overlay').style.display = 'flex';
+        searchBtn.disabled = true;
+        searchBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Scanning…';
+        document.getElementById('initial-state').style.display = 'none';
+        document.getElementById('match-result').style.display = 'none';
+
+        const formData = new FormData();
+        formData.append('photo', selectedFile);
+        formData.append('confidence_threshold', document.getElementById('confidenceThreshold').value);
+
+        try {
+            const res = await fetch('/api/ai/match-face', {
+                method: 'POST',
+                body: formData
+            });
+            const data = await res.json();
+
+            document.getElementById('scanning-overlay').style.display = 'none';
+            searchBtn.disabled = false;
+            searchBtn.innerHTML = '<i class="bi bi-search me-2"></i>Search Database';
+            document.getElementById('match-result').style.display = 'block';
+
+            if (!data.success) {
+                showPanel('error');
+                document.getElementById('error-msg').textContent = data.error || 'Unknown error';
+                return;
+            }
+
+            const result = data.result;
+
+            if (result.match_found && result.person) {
+                populateMatch(result);
+                showPanel('found');
+            } else {
+                showNoMatch(result);
+            }
+
+        } catch (err) {
+            document.getElementById('scanning-overlay').style.display = 'none';
+            searchBtn.disabled = false;
+            searchBtn.innerHTML = '<i class="bi bi-search me-2"></i>Search Database';
+            document.getElementById('match-result').style.display = 'block';
+            showPanel('error');
+            document.getElementById('error-msg').textContent = 'Network error – is the server running?';
+        }
+    }
+
+    function populateMatch(result) {
+        const p = result.person;
+        const pct = result.match_percent;
+        const thresholdUsed = result.confidence_threshold ?? document.getElementById('confidenceThreshold').value;
+
+        document.getElementById('match-name').textContent = p.name;
+        document.getElementById('match-id').textContent = 'Case #' + p.id;
+        document.getElementById('match-age').textContent = p.age + ' years';
+        document.getElementById('match-location').textContent = p.last_seen;
+        document.getElementById('match-date').textContent = p.date_reported;
+        document.getElementById('match-pct').textContent = pct + '%';
+
+        // Photo
+        const photoEl = document.getElementById('match-photo');
+        if (p.photo) {
+            photoEl.src = p.photo;
+            photoEl.parentElement.style.display = 'block';
+        } else {
+            photoEl.parentElement.style.display = 'none';
+        }
+
+        // Contact
+        const contactWrap = document.getElementById('match-contact-wrap');
+        if (p.contact) {
+            document.getElementById('match-contact').href = 'tel:' + p.contact;
+            contactWrap.style.display = 'block';
+        } else {
+            contactWrap.style.display = 'none';
+        }
+
+        // Bar and card color
+        const bar = document.getElementById('match-bar');
+        const card = document.getElementById('matchCard');
+        setTimeout(() => {
+            bar.style.width = pct + '%';
+        }, 100);
+
+        if (pct >= 75) {
+            bar.style.background = '#22c55e';
+            card.className = 'match-card high-match';
+            document.getElementById('confidence-note').style.cssText =
+                'background:rgba(34,197,94,.07);border:1px solid rgba(34,197,94,.2)';
+            document.getElementById('confidence-text').className = 'small mb-0 text-success';
+            document.getElementById('confidence-text').textContent =
+                `High confidence match (${pct}%). Recommend further verification.`;
+        } else if (pct >= 50) {
+            bar.style.background = '#f59e0b';
+            card.className = 'match-card mid-match';
+            document.getElementById('confidence-note').style.cssText =
+                'background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.2)';
+            document.getElementById('confidence-text').className = 'small mb-0 text-warning';
+            document.getElementById('confidence-text').textContent =
+                `Moderate match (${pct}%). Manual review strongly recommended.`;
+        } else {
+            bar.style.background = '#ef4444';
+            card.className = 'match-card low-match';
+            document.getElementById('confidence-note').style.cssText =
+                'background:rgba(239,68,68,.07);border:1px solid rgba(239,68,68,.2)';
+            document.getElementById('confidence-text').className = 'small mb-0 text-danger';
+            document.getElementById('confidence-text').textContent =
+                `Low confidence (${pct}%). Likely a different person.`;
+        }
+
+        document.getElementById('threshold-detail').textContent = `Threshold used: ${thresholdUsed}%`;
+
+        if (result.note) {
+            document.getElementById('confidence-text').textContent += ' (' + result.note + ')';
+        }
+    }
+
+    function showPanel(type) {
+        document.getElementById('match-found-panel').style.display = type === 'found' ? 'block' : 'none';
+        document.getElementById('no-match-panel').style.display = type === 'no-match' ? 'block' : 'none';
+        document.getElementById('error-panel').style.display = type === 'error' ? 'block' : 'none';
+    }
+
+    function showNoMatch(result) {
+        const thresholdUsed = result.confidence_threshold ?? document.getElementById('confidenceThreshold').value;
+        document.getElementById('no-match-threshold').textContent = `Minimum threshold: ${thresholdUsed}%`;
+        showPanel('no-match');
+    }
+</script>
+{% endblock %}

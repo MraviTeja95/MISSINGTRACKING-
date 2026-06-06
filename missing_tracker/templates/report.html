@@ -1,0 +1,223 @@
+{% extends "base.html" %}
+{% block title %}Report Missing Person – TraceNet{% endblock %}
+
+{% block extra_head %}
+<style>
+  .upload-zone {
+    border: 2px dashed var(--clr-border);
+    border-radius: 24px;
+    padding: 2.5rem;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color .2s, background .2s;
+    position: relative;
+  }
+  .upload-zone:hover, .upload-zone.drag-over {
+    border-color: var(--clr-accent);
+    background: rgba(37,99,235,.05);
+  }
+  .upload-zone input[type=file] {
+    position: absolute; inset: 0; opacity: 0; cursor: pointer;
+  }
+  #photo-preview {
+    max-height: 220px;
+    border-radius: 12px;
+    object-fit: cover;
+    width: 100%;
+    display: none;
+    margin-top: 1rem;
+  }
+  .step-badge {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: var(--clr-accent);
+    color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: .85rem;
+    flex-shrink: 0;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="container">
+    <div class="d-flex align-items-center gap-3">
+      <a href="/" class="btn btn-sm btn-outline-secondary rounded-circle p-1 lh-1">
+        <i class="bi bi-arrow-left"></i>
+      </a>
+      <div>
+        <h1><i class="bi bi-person-plus-fill text-primary me-3"></i>Report Missing Person</h1>
+        <p class="text-muted mb-0 mt-1">Submit a report to add the person to the active search registry</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="container pb-5">
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+
+      <div class="card p-4">
+        <form id="reportForm" enctype="multipart/form-data">
+
+          <!-- Section 1: Basic Info -->
+          <div class="d-flex align-items-center gap-3 mb-4">
+            <div class="step-badge">1</div>
+            <h5 class="mb-0 fw-semibold">Personal Information</h5>
+          </div>
+
+          <div class="row g-3 mb-4">
+            <div class="col-md-7">
+              <label class="form-label">Full Name <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" name="name" id="name"
+                     placeholder="Enter full name" required>
+            </div>
+            <div class="col-md-5">
+              <label class="form-label">Age <span class="text-danger">*</span></label>
+              <input type="number" class="form-control" name="age" id="age"
+                     placeholder="Age in years" min="0" max="120" required>
+            </div>
+            <div class="col-12">
+              <label class="form-label">Last Seen Location <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" name="last_seen" id="last_seen"
+                     placeholder="e.g. MG Road, Bengaluru near City Market" required>
+            </div>
+            <div class="col-12">
+              <label class="form-label">Description / Physical Features</label>
+              <textarea class="form-control" name="description" id="description" rows="3"
+                        placeholder="Height, clothing, distinguishing marks, circumstances..."></textarea>
+            </div>
+            <div class="col-12">
+              <label class="form-label">Reporter Contact Number</label>
+              <input type="text" class="form-control" name="contact" id="contact"
+                     placeholder="+91 XXXXX XXXXX">
+            </div>
+          </div>
+
+          <hr style="border-color:var(--clr-border);" class="my-4">
+
+          <!-- Section 2: Photo -->
+          <div class="d-flex align-items-center gap-3 mb-4">
+            <div class="step-badge">2</div>
+            <h5 class="mb-0 fw-semibold">Upload Photo</h5>
+          </div>
+
+          <div class="upload-zone" id="uploadZone">
+            <input type="file" name="photo" id="photoInput" accept="image/*">
+            <div id="upload-placeholder">
+              <i class="bi bi-cloud-arrow-up fs-1 text-muted"></i>
+              <p class="mb-1 mt-2 fw-semibold">Drop photo here or click to browse</p>
+              <p class="text-muted small mb-0">JPG, PNG, WEBP – max 16 MB</p>
+              <p class="text-muted small">A clear frontal face photo improves AI matching</p>
+            </div>
+            <img id="photo-preview" src="" alt="Preview">
+          </div>
+
+          <div class="mt-2 small text-muted">
+            <i class="bi bi-info-circle me-1"></i>
+            The photo is encoded by our AI for automatic face matching against new uploads.
+          </div>
+
+          <hr style="border-color:var(--clr-border);" class="my-4">
+
+          <!-- Submit -->
+          <div class="d-flex gap-3">
+            <button type="submit" class="btn btn-primary px-5" id="submitBtn">
+              <i class="bi bi-send-fill me-2"></i>Submit Report
+            </button>
+            <button type="reset" class="btn btn-outline-secondary" onclick="resetForm()">
+              <i class="bi bi-x-circle me-1"></i>Clear
+            </button>
+          </div>
+
+        </form>
+      </div><!-- /card -->
+
+      <!-- Success panel (hidden) -->
+      <div id="success-panel" class="card p-4 mt-4" style="display:none!important; border-color:var(--clr-success)">
+        <div class="text-center py-3">
+          <div class="mb-3" style="font-size:3rem; color:var(--clr-success)">
+            <i class="bi bi-check-circle-fill"></i>
+          </div>
+          <h4 class="fw-bold">Report Submitted Successfully</h4>
+          <p class="text-muted">The person has been added to the active missing persons registry.</p>
+          <div class="d-flex gap-3 justify-content-center mt-3">
+            <a href="/missing-list" class="btn btn-outline-primary">View Registry</a>
+            <a href="/face-search" class="btn btn-outline-secondary">Try Face Search</a>
+            <button class="btn btn-primary" onclick="location.reload()">Report Another</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  // Photo preview
+  const photoInput   = document.getElementById('photoInput');
+  const photoPreview = document.getElementById('photo-preview');
+  const placeholder  = document.getElementById('upload-placeholder');
+
+  photoInput.addEventListener('change', e => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = ev => {
+        photoPreview.src = ev.target.result;
+        photoPreview.style.display = 'block';
+        placeholder.style.display  = 'none';
+      };
+      reader.readAsDataURL(file);
+    }
+  });
+
+  // Drag over styling
+  const zone = document.getElementById('uploadZone');
+  zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
+  zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+  zone.addEventListener('drop', e => { e.preventDefault(); zone.classList.remove('drag-over'); });
+
+  // Form submit
+  document.getElementById('reportForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    const btn = document.getElementById('submitBtn');
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Submitting…';
+    btn.disabled = true;
+
+    const formData = new FormData(e.target);
+
+    try {
+      const res  = await fetch('/api/missing/add', { method: 'POST', body: formData });
+      const data = await res.json();
+
+      if (data.success) {
+        document.getElementById('reportForm').closest('.card').style.display = 'none';
+        const panel = document.getElementById('success-panel');
+        panel.style.display = 'block';
+        panel.style.removeProperty('display');
+        panel.style.display = '';
+        panel.classList.remove('d-none');
+        panel.style.cssText = '';   // remove !important
+        showToast('Report submitted! Case ID: ' + data.id, 'success');
+      } else {
+        showToast('Error: ' + data.error, 'danger');
+        btn.innerHTML = '<i class="bi bi-send-fill me-2"></i>Submit Report';
+        btn.disabled = false;
+      }
+    } catch (err) {
+      showToast('Network error. Please try again.', 'danger');
+      btn.innerHTML = '<i class="bi bi-send-fill me-2"></i>Submit Report';
+      btn.disabled = false;
+    }
+  });
+
+  function resetForm() {
+    photoPreview.style.display = 'none';
+    placeholder.style.display  = 'block';
+  }
+</script>
+{% endblock %}

@@ -1,0 +1,525 @@
+{% extends "base.html" %} {% block title %}Crime Intelligence Dashboard – TraceNet{% endblock %} {% block extra_head %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+<style>
+    .dashboard-wrapper {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        background: transparent;
+    }
+    
+    .page-header {
+        padding: 0.8rem 0;
+        background: transparent;
+        border-bottom: 1px solid var(--clr-border);
+    }
+    
+    .container-fluid {
+        flex: 1;
+        min-height: 0;
+    }
+    
+    .stat-card {
+        padding: 1rem;
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.88);
+        border: 1px solid var(--clr-border);
+        text-align: center;
+        box-shadow: 0 12px 26px rgba(15, 23, 42, 0.05);
+    }
+    
+    .stat-value {
+        font-size: 1.3rem;
+        font-weight: 700;
+    }
+    
+    .stat-label {
+        font-size: 0.75rem;
+        color: #6b7280;
+    }
+    
+    .chart-card {
+        background: rgba(255, 255, 255, 0.9);
+        border: 1px solid var(--clr-border);
+        border-radius: 24px;
+        padding: 1rem;
+        height: 100%;
+        box-shadow: 0 16px 34px rgba(15, 23, 42, 0.05);
+    }
+    
+    .chart-card h6 {
+        font-size: 0.75rem;
+        color: #6b7280;
+        text-transform: uppercase;
+        margin-bottom: 0.5rem;
+    }
+    
+    canvas {
+        max-height: 150px !important;
+    }
+    
+    #risk-list {
+        max-height: 200px;
+        overflow: auto;
+    }
+    
+    .table {
+        font-size: 0.8rem;
+    }
+    
+    .row.g-2 {
+        margin-bottom: 0;
+    }
+    
+    .hotspot-badge,
+    .crime-type-chip {
+        font-size: 0.7rem;
+        border-radius: 50px;
+    }
+    
+    .crime-type-chip {
+        background: rgba(59, 130, 246, 0.15);
+        color: #3b82f6;
+    }
+    
+    #crimeMap {
+        width: 100%;
+        min-height: 420px;
+        border-radius: 14px;
+        overflow: hidden;
+    }
+</style>
+{% endblock %} {% block content %}
+
+<div class="dashboard-wrapper">
+
+    <!-- HEADER -->
+    <div class="page-header">
+        <div class="container-fluid px-3">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h4 class="mb-0" style="color:#111827;">Crime Intelligence Dashboard</h4>
+                    <small class="text-muted">AI Monitoring & Risk Prediction System</small>
+                </div>
+                <button class="btn btn-outline-primary btn-sm" onclick="loadDashboard()">Refresh</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container-fluid px-3">
+
+        <!-- STATS -->
+        <div class="row g-2 mt-2">
+            <div class="col-3">
+                <div class="stat-card">
+                    <div id="d-missing" class="stat-value text-danger">-</div>
+                    <div class="stat-label">Missing</div>
+                </div>
+            </div>
+            <div class="col-3">
+                <div class="stat-card">
+                    <div id="d-found" class="stat-value text-success">-</div>
+                    <div class="stat-label">Found</div>
+                </div>
+            </div>
+            <div class="col-3">
+                <div class="stat-card">
+                    <div id="d-crimes" class="stat-value text-warning">-</div>
+                    <div class="stat-label">Crimes</div>
+                </div>
+            </div>
+            <div class="col-3">
+                <div class="stat-card">
+                    <div id="d-hotspots" class="stat-value text-info">-</div>
+                    <div class="stat-label">High Risk</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CHARTS -->
+        <div class="row g-2">
+
+            <div class="col-lg-7">
+                <div class="chart-card">
+                    <h6>Trends</h6>
+                    <canvas id="trendChart"></canvas>
+                </div>
+            </div>
+
+            <div class="col-lg-5">
+                <div class="chart-card">
+                    <h6>Crime Types</h6>
+                    <canvas id="typeChart"></canvas>
+                    <div id="type-legend" class="mt-2"></div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- SECOND ROW -->
+        <div class="row g-2">
+
+            <div class="col-lg-6">
+                <div class="chart-card">
+                    <h6>Locations</h6>
+                    <canvas id="locationChart"></canvas>
+                </div>
+            </div>
+
+            <div class="col-lg-6">
+                <div class="chart-card">
+                    <h6>AI Risk</h6>
+                    <div id="risk-list"></div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- MAP -->
+        <div class="chart-card mt-2">
+            <h6>Crime Density Map</h6>
+            <div id="crimeMap"></div>
+            <p id="crimeMapMessage" class="text-muted small mt-2 mb-0">Loading crime density map...</p>
+        </div>
+
+        <!-- NOTIFICATIONS -->
+        <div class="chart-card mt-2">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h6 class="mb-0">Notification Registration</h6>
+                <span id="notification-status" class="badge bg-secondary">Not registered</span>
+            </div>
+            <p class="small text-muted mb-3">Register your device token so this browser can receive real-time alerts for face matches and crime predictions.</p>
+            <div class="mb-3">
+                <label for="deviceTokenInput" class="form-label">Device Token</label>
+                <input id="deviceTokenInput" type="text" class="form-control" placeholder="Paste your FCM device token here" />
+            </div>
+            <div class="d-flex gap-2 flex-wrap">
+                <button id="registerDeviceBtn" class="btn btn-primary btn-sm" type="button">Register Device</button>
+                <button id="unregisterDeviceBtn" class="btn btn-outline-primary btn-sm" type="button">Unregister Device</button>
+            </div>
+            <p id="notification-helper" class="text-muted small mt-3 mb-0">If you already have a valid Firebase client token, paste it into the field and register.</p>
+        </div>
+
+        <!-- HOTSPOTS -->
+        <div class="chart-card mt-2">
+            <h6>Hotspots</h6>
+            <div class="table-responsive">
+                <table class="table table-sm mb-0">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Location</th>
+                            <th>Incidents</th>
+                            <th>Crime</th>
+                            <th>Risk</th>
+                        </tr>
+                    </thead>
+                    <tbody id="hotspot-tbody"></tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+{% endblock %} {% block extra_scripts %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+    let trendChart, typeChart, locationChart;
+
+    async function loadDashboard() {
+        const res = await fetch('/api/dashboard/summary');
+        const dash = await res.json();
+
+        document.getElementById('d-missing').innerText = dash.stats.total_missing;
+        document.getElementById('d-found').innerText = dash.stats.total_found;
+        document.getElementById('d-crimes').innerText = dash.stats.total_crimes;
+        document.getElementById('d-hotspots').innerText = dash.stats.high_risk || 0;
+
+        buildTrend(dash.monthly_trends);
+        buildType(dash.crimes_by_type);
+        buildLocation(dash.crimes_by_location);
+        buildRisk(dash.risk_predictions || []);
+        buildHotspots(dash.hotspots || []);
+        loadCrimeMap();
+    }
+
+    function buildTrend(data) {
+        const ctx = document.getElementById("trendChart");
+        if (trendChart) trendChart.destroy();
+
+        trendChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: data.map(d => d.month),
+                datasets: [{
+                    label: 'Crimes',
+                    data: data.map(d => d.crimes),
+                    borderColor: '#f59e0b'
+                }, {
+                    label: 'Missing',
+                    data: data.map(d => d.missing),
+                    borderColor: '#3b82f6'
+                }]
+            }
+        });
+    }
+
+    function buildType(data) {
+        const ctx = document.getElementById("typeChart");
+        if (typeChart) typeChart.destroy();
+
+        typeChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: data.map(d => d.type),
+                datasets: [{
+                    data: data.map(d => d.count)
+                }]
+            }
+        });
+    }
+
+    function buildLocation(data) {
+        const ctx = document.getElementById("locationChart");
+        if (locationChart) locationChart.destroy();
+
+        locationChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: data.map(d => d.location),
+                datasets: [{
+                    data: data.map(d => d.count)
+                }]
+            }
+        });
+    }
+
+    function buildHotspots(data) {
+        const tbody = document.getElementById('hotspot-tbody');
+        if (!data || !data.length) {
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">No hotspots available</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = data.slice(0, 10).map((h, index) => `
+            <tr>
+                <td>${index + 1}</td>
+                <td>${escapeHtml(h.location)}</td>
+                <td>${h.total_incidents ?? h.count ?? 0}</td>
+                <td>${escapeHtml(h.top_crime_type || h.common_crime || 'N/A')}</td>
+                <td><span class="badge" style="background:${h.color || '#6b7280'}">${h.risk_level || h.risk || 'Unknown'}</span></td>
+            </tr>
+        `).join('');
+    }
+
+    async function loadCrimeMap() {
+        const messageEl = document.getElementById('crimeMapMessage');
+        const mapContainer = document.getElementById('crimeMap');
+        
+        try {
+            // Initialize map if not already done
+            if (!window.crimeMapInstance) {
+                window.crimeMapInstance = L.map('crimeMap', {
+                    scrollWheelZoom: true
+                }).setView([12.95, 77.65], 10);  // Centered on Bangalore
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    maxZoom: 19,
+                    attribution: '&copy; OpenStreetMap contributors'
+                }).addTo(window.crimeMapInstance);
+            }
+
+            if (!window.crimeLayerGroup) {
+                window.crimeLayerGroup = L.layerGroup().addTo(window.crimeMapInstance);
+            } else {
+                window.crimeLayerGroup.clearLayers();
+            }
+
+            // Fetch crime density data
+            const res = await fetch('/api/dashboard/crime-density');
+            if (!res.ok) {
+                throw new Error(`HTTP error! status: ${res.status}`);
+            }
+            
+            const payload = await res.json();
+            
+            if (!payload.success) {
+                messageEl.textContent = 'Error loading crime data: ' + (payload.error || 'Unknown error');
+                messageEl.style.display = 'block';
+                return;
+            }
+
+            if (!payload.data || payload.data.length === 0) {
+                messageEl.textContent = 'No geographic crime data available. Seed database with crime records first.';
+                messageEl.style.display = 'block';
+                // Show default map view
+                window.crimeMapInstance.setView([12.95, 77.65], 10);
+                return;
+            }
+
+            // Plot all crime locations
+            const bounds = [];
+            payload.data.forEach(point => {
+                try {
+                    const lat = parseFloat(point.avg_lat);
+                    const lng = parseFloat(point.avg_lng);
+                    
+                    if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+                        console.warn(`Invalid coordinates for ${point.location}: lat=${lat}, lng=${lng}`);
+                        return;
+                    }
+                    
+                    const count = point.count || 0;
+                    const color = count >= 10 ? '#ef4444' : (count >= 5 ? '#f59e0b' : '#22c55e');
+                    const radius = Math.min(30, 6 + Math.sqrt(count) * 3);
+                    
+                    const marker = L.circleMarker([lat, lng], {
+                        color: color,
+                        fillColor: color,
+                        fillOpacity: 0.35,
+                        radius: radius,
+                        weight: 2
+                    });
+                    marker.bindPopup(`<strong>${escapeHtml(point.location)}</strong><br/>Incidents: ${count}`);
+                    marker.addTo(window.crimeLayerGroup);
+                    bounds.push([lat, lng]);
+                } catch (err) {
+                    console.error(`Error plotting marker for ${point.location}:`, err);
+                }
+            });
+
+            // Fit map to all markers
+            if (bounds.length > 0) {
+                window.crimeMapInstance.fitBounds(bounds, {
+                    padding: [40, 40],
+                    maxZoom: 14
+                });
+                messageEl.style.display = 'none';
+            } else {
+                messageEl.textContent = 'Crime data found but no valid coordinates could be plotted.';
+                messageEl.style.display = 'block';
+            }
+        } catch (err) {
+            console.error('Crime map loading error:', err);
+            messageEl.textContent = `Unable to load crime map: ${err.message || 'Unknown error'}`;
+            messageEl.style.display = 'block';
+        }
+    }
+
+    function escapeHtml(str) {
+        return String(str).replace(/[&<>'"]/g, m => ({
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#39;'
+        }[m]));
+    }
+
+    function buildRisk(data) {
+        document.getElementById("risk-list").innerHTML =
+            data.slice(0, 8).map(r => `
+      <div class="d-flex justify-content-between small text-dark mb-1">
+        <span>${r.location}</span>
+        <span style="color:${r.color}">${r.risk_level}</span>
+      </div>
+    `).join('');
+    }
+
+    async function registerDevice(token) {
+        try {
+            const response = await fetch('/api/notifications/register', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    device_token: token,
+                    platform: 'web'
+                })
+            });
+            const result = await response.json();
+            if (!response.ok || !result.success) {
+                showToast(result.error || 'Unable to register device', 'danger');
+                return false;
+            }
+            localStorage.setItem('traceNetNotificationToken', token);
+            updateNotificationUI(true);
+            showToast('Device registration successful', 'success');
+            return true;
+        } catch (error) {
+            showToast('Device registration failed', 'danger');
+            return false;
+        }
+    }
+
+    async function unregisterDevice(token) {
+        try {
+            const response = await fetch('/api/notifications/unregister', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    device_token: token
+                })
+            });
+            const result = await response.json();
+            if (!response.ok || !result.success) {
+                showToast(result.error || 'Unable to unregister device', 'danger');
+                return false;
+            }
+            localStorage.removeItem('traceNetNotificationToken');
+            updateNotificationUI(false);
+            showToast('Device unregistered successfully', 'success');
+            return true;
+        } catch (error) {
+            showToast('Device unregister failed', 'danger');
+            return false;
+        }
+    }
+
+    function updateNotificationUI(isRegistered) {
+        const statusEl = document.getElementById('notification-status');
+        const tokenInput = document.getElementById('deviceTokenInput');
+        statusEl.textContent = isRegistered ? 'Registered' : 'Not registered';
+        statusEl.className = isRegistered ? 'badge bg-success' : 'badge bg-secondary';
+        if (isRegistered) {
+            tokenInput.classList.add('border-success');
+        } else {
+            tokenInput.classList.remove('border-success');
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        loadDashboard();
+
+        const storedToken = localStorage.getItem('traceNetNotificationToken');
+        if (storedToken) {
+            document.getElementById('deviceTokenInput').value = storedToken;
+            updateNotificationUI(true);
+        }
+
+        document.getElementById('registerDeviceBtn').addEventListener('click', async() => {
+            const token = document.getElementById('deviceTokenInput').value.trim();
+            if (!token) {
+                showToast('Please enter your device token first', 'warning');
+                return;
+            }
+            await registerDevice(token);
+        });
+
+        document.getElementById('unregisterDeviceBtn').addEventListener('click', async() => {
+            const token = document.getElementById('deviceTokenInput').value.trim();
+            if (!token) {
+                showToast('Please enter your device token first', 'warning');
+                return;
+            }
+            await unregisterDevice(token);
+        });
+    });
+</script>
+
+{% endblock %}
